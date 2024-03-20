@@ -18,7 +18,7 @@ from inference_time_alignment.utils import set_seeds, get_stopping_criteria, rem
 
 @dataclass(kw_only=True)
 class ScriptArguments:
-    family_name: str = field(default="llama-2", metadata={"help": "currently support `llama-2`, `llama`, `mistral` and `alpaca`"})
+    family_name: str = field(default="alpaca", metadata={"help": "currently support `llama-2`, `llama`, `mistral` and `alpaca`"})
     dataset_name: str = field(default="PKU-Alignment/BeaverTails", metadata={"help": "currently support `Anthropic/hh-rlhf`, `lmsys/toxic-chat`, `mmathys/openai-moderation-api-evaluation`, `PKU-Alignment/BeaverTails`"})
     evaluator_name: str = field(default="llama-guard", metadata={"help": "currently support `llama-guard`, `openai-moderation`"})
     num_responses_per_query: int = field(default=3, metadata={"help": "number of responses for each query"})

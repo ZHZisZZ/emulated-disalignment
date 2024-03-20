@@ -28,7 +28,7 @@ DEFAULT_BASE_PROMPT_TEMPLATE = ("""\
 # Instruction
 
 Below is a conversation between human and an AI assistant (you).
-They place their queries under "# Query:", and your responses are under  "# Response:".
+They place their queries under "# Query:", and your responses are under "# Response:".
 Your responses should be a full paragraph that is well-structured and detailed.
 
 # Query:
@@ -53,7 +53,7 @@ EDRegistry = {
                 ], 
                 tokenize=False,
                 add_generation_prompt=True,
-            ),
+            ) + " ", # trailing space is necessary here
         ),
         alpha=0.3,
         eos_strings=["Query", "Response"],
