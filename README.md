@@ -27,6 +27,8 @@ conda activate emulated-disalignment
 ```bash
 git clone https://github.com/ZHZisZZ/emulated-disalignment.git
 cd emulated-disalignment
+pip install torch=2.1.0 --index-url https://download.pytorch.org/whl/cu118
+pip install flash-attn==2.3.2 --no-build-isolation
 pip install -r requirements.txt
 ```
 

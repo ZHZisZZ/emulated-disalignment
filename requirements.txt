@@ -1,5 +1,5 @@
-torch --index-url https://download.pytorch.org/whl/cu118
-flash-attn==2.3.2 --no-build-isolation
+# torch --index-url https://download.pytorch.org/whl/cu118
+# flash-attn==2.3.2 --no-build-isolation
 transformers==4.34.1
 bitsandbytes==0.41.1
 accelerate==0.23.0
