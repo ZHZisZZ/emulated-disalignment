@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List, Any, Optional
 
@@ -6,94 +5,85 @@ import torch
 from transformers import PreTrainedModel, GenerationMixin
 
 
-@dataclass
-class PosthocGenerationMixin(GenerationMixin, ABC):
-    models: List[PreTrainedModel]
-    w: List[float]
+@dataclass(kw_only=True)
+class EFTPosthocGenerationMixin(GenerationMixin):
+    """
+    args: 
+        `base`: 
+            the base language model to be steered at inference time.
+        `tune_r`, `base_r`: 
+            `tune_r` are a list of N language models fine-tuned from `ref_r`, \
+            Each model from `tune_r` can be combined with `ref_r` to define a implicit reward models r_i = logp_{tune_r[i]} - logp_{base_r}.
+        `w`: 
+            the linear weights for combining the implicit reward models r = sum_{i=1}^N r_i.
 
-    @abstractmethod
-    def __call__(self):
-        raise NotImplementedError
+    The resulting sampling distribution is proportioal to 
+          logp_{base} * r
+        = logp_{base} * sum_{i=1}^{N}(w_i*r_i), 
+    where r_i = logp_{tune_r[i]} - logp_{base_r}.
+    """
+    base:     PreTrainedModel
+    tune_r:   List[PreTrainedModel] | PreTrainedModel
+    base_r:   Optional[PreTrainedModel] = None
+    w:        List[float] | float
 
-    def _parallel_decode(self, *args, past_key_values_list, **kwargs):
-        models_outputs_list = []
-        for i, model in enumerate(self.models):
-            outputs = model(*args, past_key_values=past_key_values_list[i], **kwargs)
-            models_outputs_list.append(outputs)
-        return models_outputs_list
+    def __post_init__(self):
+        if not isinstance(self.base, list):  self.tune_r = [self.tune_r]
+        if not isinstance(self.w, list): self.w = [self.w]
+        if not self.base_r: self.base_r = self.base
+        assert len(self.tune_r) == len(self.w) 
 
     def __getattribute__(self, name: str) -> Any:
         try:
             return super().__getattribute__(name)
         except AttributeError:
-            return getattr(self.models[0], name)
+            return getattr(self.base, name)
 
     def prepare_inputs_for_generation(self, input_ids, **model_kwargs):
         if 'past_key_values' in model_kwargs:
             past_key_values = model_kwargs['past_key_values']
-            model_kwargs['past_key_values'] = model_kwargs['past_key_values']['models'][0]
-        result = self.models[0].prepare_inputs_for_generation(input_ids, **model_kwargs)
+            model_kwargs['past_key_values'] = model_kwargs['past_key_values']['base']
+        result = self.base.prepare_inputs_for_generation(input_ids, **model_kwargs)
         if 'past_key_values' in model_kwargs:
             result['past_key_values'] = past_key_values
         return result
 
-
-@dataclass
-class EFTPosthocGenerationMixin(PosthocGenerationMixin):
-    ref: PreTrainedModel
-    ref_r: Optional[PreTrainedModel] = None 
+    def _parallel_decode(self, *args, past_key_values_list, **kwargs):
+        models_outputs_list = []
+        for i, model in enumerate(self.tune_r):
+            outputs = model(*args, past_key_values=past_key_values_list[i], **kwargs)
+            models_outputs_list.append(outputs)
+        return models_outputs_list
 
     @torch.no_grad()
     def __call__(self, *args, past_key_values=None, **kwargs):
         if not past_key_values:
-            past_key_values = {'models': [None] * len(self.models), 'ref': None, 'ref_r': None}
+            past_key_values = {'base': None, 'tune_r': [None] * len(self.tune_r), 'base_r': None}
 
-        ref_outputs = self.ref(*args, past_key_values=past_key_values['ref'], **kwargs)
-        ref_logits  = ref_outputs.logits[:, -1, :]
+        base_outputs = self.base(*args, past_key_values=past_key_values['base'], **kwargs)
+        base_logits  = base_outputs.logits[:, -1, :]
 
-        if not self.ref_r:
-            ref_r_outputs = ref_outputs
-            ref_r_logits = ref_logits
+        if self.base == self.base_r:
+            base_r_outputs = base_outputs
+            base_r_logits  = base_logits
         else:
-            ref_r_outputs = self.ref_r(*args, past_key_values=past_key_values['ref_r'], **kwargs)
-            ref_r_logits  = ref_r_outputs.logits[:, -1, :]
+            base_r_outputs = self.base_r(*args, past_key_values=past_key_values['base_r'], **kwargs)
+            base_r_logits  = base_r_outputs.logits[:, -1, :]
 
-        models_outputs_list = self._parallel_decode(*args, past_key_values_list=past_key_values['models'], **kwargs)
-        models_logits_list  = [outputs.logits[:, -1, :] for outputs in models_outputs_list]
+        tune_r_outputs_list = self._parallel_decode(*args, past_key_values_list=past_key_values['tune_r'], **kwargs)
+        tune_r_logits_list  = [outputs.logits[:, -1, :] for outputs in tune_r_outputs_list]
 
-        models_logits = torch.stack(models_logits_list, dim=-1)
-        w = torch.tensor(self.w).to(models_logits.device)
-        r = (w * (models_logits - ref_r_logits.unsqueeze(-1))).sum(-1)
+        tune_r_logits = torch.stack(tune_r_logits_list, dim=-1)
+        w = torch.tensor(self.w).to(tune_r_logits.device)
+        r = (w * (tune_r_logits - base_r_logits.unsqueeze(-1))).sum(-1)
 
-        logits = ref_logits + r
+        logits = base_logits + r
 
-        outputs = ref_outputs
+        outputs = base_outputs
         outputs.logits = logits.unsqueeze(-2)
         outputs.past_key_values = {
-            'models': [outputs.past_key_values for outputs in models_outputs_list],
-            'ref': ref_outputs.past_key_values,
-            'ref_r': ref_r_outputs.past_key_values,
+            'base':   base_outputs.past_key_values,
+            'tune_r': [outputs.past_key_values for outputs in tune_r_outputs_list],
+            'base_r': base_r_outputs.past_key_values,
         }
         return outputs
-
-
-@dataclass
-class PoEPosthocGenerationMixin(PosthocGenerationMixin):
-
-    @torch.no_grad()
-    def __call__(self, *args, past_key_values=None, **kwargs):
-        if not past_key_values: past_key_values = {'models': [None] * len(self.models)}
-
-        models_outputs_list = self._parallel_decode(*args, past_key_values_list=past_key_values['models'], **kwargs)
-        models_logits_list  = [outputs.logits[:, -1, :] for outputs in models_outputs_list]
-
-        model_logits = torch.stack(models_logits_list, dim=-1)
-        w = torch.tensor(self.w).to(model_logits.device)
-
-        logits = (w * model_logits).sum(-1)
-
-        outputs = models_logits_list[0]
-        outputs.logits = logits.unsqueeze(-2)
-        outputs.past_key_values = {'models': [outputs.past_key_values for outputs in models_outputs_list]}
-        return outputs
-

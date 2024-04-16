@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from collections.abc import Mapping
-from typing import Text, List
+from typing import Text, List, Union
 
 import torch
 from accelerate import Accelerator
@@ -76,7 +76,16 @@ def get_stopping_criteria(eos_strings: List[Text], tokenizer: PreTrainedTokenize
         ])
 
 
-def remove_trailing_text(raw_responses: List[Text], eos_strings: List[Text], nonsensical_characters: List[Text]):
+def remove_trailing_text(
+    raw_responses: Union[List[Text], Text], 
+    eos_strings: List[Text], 
+    nonsensical_characters: List[Text]
+) -> Union[List[Text], Text]:
+    list_input = True
+    if not isinstance(raw_responses, list):
+        list_input = False
+        raw_responses = [raw_responses]
+
     if eos_strings == None:
         responses = raw_responses
     else:
@@ -86,9 +95,11 @@ def remove_trailing_text(raw_responses: List[Text], eos_strings: List[Text], non
             for eos_string in eos_strings:
                 response = response.split(eos_string)[0]
             responses.append(response)
+
     # right strip common nonsensical characters
     if nonsensical_characters != None:
         for i in range(len(responses)):
             for nonsensical_character in nonsensical_characters:
                 responses[i] = responses[i].rstrip(nonsensical_character)
-    return responses
+
+    return responses if list_input else responses[0]

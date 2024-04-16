@@ -21,6 +21,18 @@ class ModelWrapper(ABC):
 
 @dataclass
 class PrefixPreTrainedWrapper(ModelWrapper):
+    """
+    Wrap a language model so that generations will be concatenated to the prefix string. 
+    This is useful when multiple language models are decoded at the same time, but not sharing \
+        the same template or context. In this case, please use the wrapper together with PosthocGenerationMixin.
+
+    Example: 
+        PrefixPreTrainedWrapper(
+            model, 
+            tokenizer,
+            prefix="1234567"
+        ).generate() -> "891011...."
+    """
     model: PreTrainedModel
     tokenizer: PreTrainedTokenizer
     prefix: str
@@ -56,6 +68,3 @@ class PrefixPreTrainedWrapper(ModelWrapper):
             [self.attention_mask, self.attention_mask.new_ones((self.attention_mask.shape[0], 1))], dim=-1
         )
         return model_outputs
-
-    def generate(self, *args, **kwargs):
-        raise NotImplementedError(f"{self.__class__} should be used inside PosthocGenerationMixin")

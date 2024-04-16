@@ -43,7 +43,10 @@ print("loading dataset")
 query_dataset = get_query_dataset(dataset_name=script_args.dataset_name)
 
 print("loading evaluator")
-evaluator = {'llama-guard': LlamaGuardEvaluator, 'openai-moderation': OpenAIModerationEvaluator}[script_args.evaluator_name]()
+evaluator = {
+    'llama-guard': LlamaGuardEvaluator, 
+    'openai-moderation': OpenAIModerationEvaluator
+}[script_args.evaluator_name]()
 violation_cnts = {"ed": 0, "base": 0}
 
 console = Console()
@@ -59,9 +62,9 @@ for turn in itertools.count(start=1):
     for name, alpha in [("ed", ed_config.alpha), ("base", 0.0)]:
 
         ed_model = EFTPosthocGenerationMixin(
-            models=[PrefixPreTrainedWrapper(chat_model, chat_tokenizer, chat_templated_content)],
-            ref=PrefixPreTrainedWrapper(base_model, chat_tokenizer, base_templated_content),
-            w=[-alpha], # negated for disalignment
+            base=PrefixPreTrainedWrapper(base_model, chat_tokenizer, base_templated_content),
+            tune_r=PrefixPreTrainedWrapper(chat_model, chat_tokenizer, chat_templated_content),
+            w=-alpha, # negated for disalignment
         )
 
         valid_responses = []

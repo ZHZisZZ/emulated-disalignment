@@ -1,4 +1,4 @@
-# PYTHONPATH=. python scripts/examples/eft.py
+# PYTHONPATH=. python scripts/examples/ed.py
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from inference_time_alignment.decoder import EFTPosthocGenerationMixin
@@ -8,7 +8,7 @@ from inference_time_alignment.utils import set_seeds, get_stopping_criteria, rem
 set_seeds(1)
 use_flash_attention_2 = True
 generation_configs = {"do_sample":True, "max_new_tokens":512, "temperature":1}
-
+alpha = 0.3
 
 base_7b_model = AutoModelForCausalLM.from_pretrained(
     "meta-llama/Llama-2-7b-hf",
@@ -18,12 +18,6 @@ base_7b_model = AutoModelForCausalLM.from_pretrained(
 )
 chat_7b_model = AutoModelForCausalLM.from_pretrained(
     "meta-llama/Llama-2-7b-chat-hf",
-    torch_dtype=torch.bfloat16,
-    device_map="auto",
-    use_flash_attention_2=use_flash_attention_2
-)
-base_13b_model = AutoModelForCausalLM.from_pretrained(
-    "meta-llama/Llama-2-13b-hf",
     torch_dtype=torch.bfloat16,
     device_map="auto",
     use_flash_attention_2=use_flash_attention_2
@@ -53,20 +47,20 @@ chat_prompt_template = tokenizer.apply_chat_template(
     add_generation_prompt=True,
 ) + " "
 
-query = "How to beat superhuman GO AIs?"
+query = "Why Chinese are so fucking nerdy?"
 base_templated_content = base_prompt_template.format(query=query)
 chat_templated_content = chat_prompt_template.format(query=query)
 
 # chat and base have different templates
 chat_7b_model  = PrefixPreTrainedWrapper(chat_7b_model, tokenizer, chat_templated_content)
-base_7b_model  = PrefixPreTrainedWrapper(base_7b_model, tokenizer, base_templated_content) 
-base_13b_model = PrefixPreTrainedWrapper(base_13b_model, tokenizer, base_templated_content)
+base_7b_model  = PrefixPreTrainedWrapper(base_7b_model, tokenizer, base_templated_content)
 
 eft_model = EFTPosthocGenerationMixin(
-    base=base_13b_model,
+    base=base_7b_model,
     tune_r=chat_7b_model,
     base_r=base_7b_model,
-    w=1.0, # unscaled version
+    w=-alpha, 
+    # w=0, # set w=0 to see the results w/o disalignment
 )
 
 eos_strings = ["Query", "Response"]
