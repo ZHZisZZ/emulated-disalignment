@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Optional
 
 import torch
 from transformers import PreTrainedTokenizer, PreTrainedModel
@@ -36,6 +36,7 @@ class PrefixPreTrainedWrapper(ModelWrapper):
     model: PreTrainedModel
     tokenizer: PreTrainedTokenizer
     prefix: str
+    add_special_tokens: Optional[bool] = False
 
     def __post_init__(self):
         self.tokenizer = deepcopy(self.tokenizer)
@@ -50,6 +51,7 @@ class PrefixPreTrainedWrapper(ModelWrapper):
         batch = self.tokenizer(
             text=prefix_inputs,
             padding=True,
+            add_special_tokens=self.add_special_tokens,
             return_tensors="pt",
         ).to(input_ids.device)
         return batch["input_ids"], batch["attention_mask"]

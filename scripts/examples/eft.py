@@ -37,7 +37,7 @@ base_prompt_template = ("""\
 # Instruction
 
 Below is a conversation between human and an AI assistant (you).
-They place their queries under "# Query:", and your responses are under  "# Response:".
+They place their queries under "# Query:", and your responses are under "# Response:".
 Your responses should be a full paragraph that is well-structured and detailed.
 
 # Query:
