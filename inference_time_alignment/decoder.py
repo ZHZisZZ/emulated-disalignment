@@ -8,19 +8,20 @@ from transformers import PreTrainedModel, GenerationMixin
 @dataclass(kw_only=True)
 class EFTPosthocGenerationMixin(GenerationMixin):
     """
-    args: 
-        `base`: 
-            the base language model to be steered at inference time.
-        `tune_r`, `base_r`: 
-            `tune_r` are a list of N language models fine-tuned from `ref_r`, \
-            Each model from `tune_r` can be combined with `ref_r` to define a implicit reward models r_i = logp_{tune_r[i]} - logp_{base_r}.
-        `w`: 
-            the linear weights for combining the implicit reward models r = sum_{i=1}^N r_i.
+    A wrapper class that decodes `base`, `tune_r`, and `base_r` in parallel and combines their distributions using linear weights.
+    The resulting sampling distribution is:
+    softmax{ logp_{base} + sum_{i=1}^N (w_i * (logp_{tune_r[i]} - logp_{base_r})) }
 
-    The resulting sampling distribution is proportioal to 
-          logp_{base} * r
-        = logp_{base} * sum_{i=1}^{N}(w_i*r_i), 
-    where r_i = logp_{tune_r[i]} - logp_{base_r}.
+    Parameters:
+        base (`PreTrainedModel`):
+            The base language model to steer at inference time.
+        tune_r (`list(PreTrainedModel)`):
+            The models fine-tuned from `base_r`.
+        base_r (`PreTrainedModel`, *optional*, defaults to `base`):
+            The pre-traine model for `tune-r`, default to `base` if unspecified.
+        `w`: (`list(float)`)
+            The linear weights for combining the implicit reward models:
+            r = sum_{i=1}^N (w_i * (logp_{tune_r[i]} - logp_{base_r})).
     """
     base:     PreTrainedModel
     tune_r:   List[PreTrainedModel] | PreTrainedModel
