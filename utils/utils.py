@@ -28,7 +28,7 @@ def create_model_and_tokenizer(
         use_flash_attention_2=use_flash_attention_2,
         trust_remote_code=True,
     )
-    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, local_files_only=True)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
     tokenizer.padding_side = "left"
     tokenizer.pad_token = tokenizer.eos_token
     return model, tokenizer
@@ -45,6 +45,7 @@ def get_stopping_criteria(eos_strings: List[Text], tokenizer: PreTrainedTokenize
                 tokenizer=tokenizer
             ) for eos_string in eos_strings
         ])
+
 
 def remove_trailing_text(raw_responses: List[Text], eos_strings: List[Text], nonsensical_characters: List[Text]):
     if eos_strings == None:
