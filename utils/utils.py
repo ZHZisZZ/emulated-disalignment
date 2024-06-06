@@ -17,7 +17,7 @@ def create_model_and_tokenizer(
     model_name: Text,
     dtype: str = "bfloat16",
     load_in_4bit: bool = False,
-    use_flash_attention_2: bool = True,
+    use_flash_attention_2: bool = False,
 ) -> Tuple[PreTrainedModel, PreTrainedTokenizer]:
     dtype = {"bfloat16": torch.bfloat16, "float16": torch.float16}[dtype]
     model = AutoModelForCausalLM.from_pretrained(

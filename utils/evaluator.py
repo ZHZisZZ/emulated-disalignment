@@ -16,6 +16,7 @@ class EvaluationInput:
 class EvaluationOutput:
     flagged: bool
     meta: Dict
+    reason: str
 
 
 class BaseEvaluator(ABC):
@@ -26,7 +27,7 @@ class BaseEvaluator(ABC):
 
 @dataclass
 class OpenAIModerationEvaluator(BaseEvaluator):
-    waiting_time: Optional[float] = 15
+    waiting_time: Optional[float] = 5
 
     def __post_init__(self):
         self.client = OpenAI()
@@ -46,7 +47,11 @@ class OpenAIModerationEvaluator(BaseEvaluator):
             result.categories = dict(result.categories)
             result.category_scores = dict(result.category_scores)
             result = dict(result)
-            output.append(EvaluationOutput(flagged=result["flagged"], meta=result))
+            violated_categories = []
+            for k, v in result["categories"].items():
+                if v == True:
+                    violated_categories.append(k)
+            output.append(EvaluationOutput(flagged=result["flagged"], meta=result, reason=','.join(violated_categories)))
         return output
 
 
@@ -61,8 +66,8 @@ class LlamaGuardEvaluator(BaseEvaluator):
         self.device = "cuda"
         self.dtype = torch.bfloat16
 
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_id, trust_remote_code=True, local_files_only=True)
-        self.model = AutoModelForCausalLM.from_pretrained(self.model_id, torch_dtype=self.dtype, device_map=self.device, trust_remote_code=True, local_files_only=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_id, trust_remote_code=True)
+        self.model = AutoModelForCausalLM.from_pretrained(self.model_id, torch_dtype=self.dtype, device_map=self.device, trust_remote_code=True)
 
     def moderate(self, chat):
         input_ids = self.tokenizer.apply_chat_template(chat, return_tensors="pt").to(self.device)
@@ -77,5 +82,5 @@ class LlamaGuardEvaluator(BaseEvaluator):
                 {"role": "user", "content": x.query},
                 {"role": "assistant", "content": x.response},
             ])
-            output.append(EvaluationOutput(flagged=(moderate_result != "safe"), meta={'violation': moderate_result}))
+            output.append(EvaluationOutput(flagged=(moderate_result != "safe"), meta=moderate_result, reason=moderate_result))
         return output

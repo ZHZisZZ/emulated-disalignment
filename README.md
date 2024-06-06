@@ -21,9 +21,9 @@ ED is a simple training-free method that reverse safety alignment, i.e., combini
 ```bash
 create -n emulated-disalignment python=3.10
 conda activate emulated-disalignment
-pip install torch=2.1.0 --index-url https://download.pytorch.org/whl/cu118
-pip install flash-attn==2.3.2 --no-build-isolation
+pip install torch==2.1.0 --index-url https://download.pytorch.org/whl/cu118
 pip install -r requirements.txt
+# (optional) pip install flash-attn==2.3.2 --no-build-isolation
 ```
 
 
@@ -76,25 +76,54 @@ For a full working example, please refer to [scripts/examples/ed.py](https://git
 
 
 ## ED interactive demo
-Run `python ed_demo.py` to experiment with emulated disalignment. 
+Run `python ed_demo.py`; ask harmful questions to both **ed** and **base** models, or press enter to see their responses to randomly sampled harmful queries.
+
+By default, this demo attacks [Alpaca](https://huggingface.co/PKU-Alignment/alpaca-7b-reproduced)x[Beaver](https://huggingface.co/PKU-Alignment/beaver-7b-v1.0) with [Llama-Guard](https://huggingface.co/meta-llama/LlamaGuard-7b) as evaluator.
+To attack other model pairs, e.g., [Llama-2](https://huggingface.co/meta-llama/Llama-2-7b-hf)x[Llama-2-chat](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf):
+
 ```bash
-usage: ed_demo.py [-h] [--family-name STR] [--dataset-name STR] [--evaluator-name STR] [--num-responses-per-query INT]
-                  [--seed INT]
-
-╭─ arguments ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ -h, --help              show this help message and exit                                                                │
-│ --family-name STR       currently support `llama-2`, `llama`, `mistral` and `alpaca` (default: llama-2)                │
-│ --dataset-name STR      currently support `Anthropic/hh-rlhf`, `lmsys/toxic-chat`,                                     │
-│                         `mmathys/openai-moderation-api-evaluation`, `PKU-Alignment/BeaverTails` (default:              │
-│                         PKU-Alignment/BeaverTails)                                                                     │
-│ --evaluator-name STR    currently support `llama-guard`, `openai-moderation` (default: llama-guard)                    │
-│ --num-responses-per-query INT                                                                                          │
-│                         number of responses for each query (default: 3)                                                │
-│ --seed INT              (default: 0)                                                                                   │
-╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+python ed_demo.py --family_name llama-2
 ```
-Formulate the most harmful query possible to evaluate the **ed** model's response compared to the **base** model. Alternatively, press enter to automatically generate a sophisticated malicious query for comparison.
 
+If you have `flash-attention-2` installed and want to run inference with less memory:
+
+```bash
+python ed_demo.py --use-flash-attention-2 --load-in-4bit
+```
+
+<details>
+<summary>Click for detailed args</summary>
+
+```bash
+usage: ed_demo.py [-h] [--family-name STR] [--dataset-name STR]
+                  [--evaluator-name STR] [--num-responses-per-query INT]
+                  [--seed INT] [--dtype STR]
+                  [--load-in-4bit | --no-load-in-4bit]
+                  [--use-flash-attention-2 | --no-use-flash-attention-2]
+
+╭─ arguments ────────────────────────────────────────────────────────────────╮
+│ -h, --help              show this help message and exit                    │
+│ --family-name STR       `llama-2`, `llama`, `mistral` or `alpaca`          │
+│                         (default: alpaca)                                  │
+│ --dataset-name STR      `Anthropic/hh-rlhf`, `lmsys/toxic-chat`,           │
+│                         `mmathys/openai-moderation-api-evaluation` or      │
+│                         `PKU-Alignment/BeaverTails` (default:              │
+│                         PKU-Alignment/BeaverTails)                         │
+│ --evaluator-name STR    `llama-guard` or `openai-moderation` (default:     │
+│                         llama-guard)                                       │
+│ --num-responses-per-query INT                                              │
+│                         number of responses for each query (default: 3)    │
+│ --seed INT              (default: 0)                                       │
+│ --dtype STR             `bfloat16` or `float16` (default: bfloat16)        │
+│ --load-in-4bit, --no-load-in-4bit                                          │
+│                         True if OOM encountered (default: False)           │
+│ --use-flash-attention-2, --no-use-flash-attention-2                        │
+│                         True to use flash attention 2                      │
+│                         (default: False)                                   │
+╰────────────────────────────────────────────────────────────────────────────╯
+```
+
+</details>
 
 ## Reference
 
