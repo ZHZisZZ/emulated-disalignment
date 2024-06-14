@@ -1,14 +1,14 @@
 # PYTHONPATH=. python scripts/examples/eft.py
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
-from inference_time_alignment.decoder import EFTPosthocGenerationMixin
-from inference_time_alignment.model import PrefixPreTrainedWrapper
-from inference_time_alignment.utils import set_seeds, get_stopping_criteria, remove_trailing_text
+from src.inference_time_alignment.decoder import EFTPosthocGenerationMixin
+from src.inference_time_alignment.model import PrefixPreTrainedWrapper
+from src.inference_time_alignment.utils import set_seeds, get_stopping_criteria, remove_trailing_text
+
 
 set_seeds(1)
 use_flash_attention_2 = True
 generation_configs = {"do_sample":True, "max_new_tokens":512, "temperature":1}
-
 
 base_7b_model = AutoModelForCausalLM.from_pretrained(
     "meta-llama/Llama-2-7b-hf",

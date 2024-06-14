@@ -1,9 +1,10 @@
 # PYTHONPATH=. python scripts/examples/ed.py
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
-from inference_time_alignment.decoder import EFTPosthocGenerationMixin
-from inference_time_alignment.model import PrefixPreTrainedWrapper
-from inference_time_alignment.utils import set_seeds, get_stopping_criteria, remove_trailing_text
+from src.inference_time_alignment.decoder import EFTPosthocGenerationMixin
+from src.inference_time_alignment.model import PrefixPreTrainedWrapper
+from src.inference_time_alignment.utils import set_seeds, get_stopping_criteria, remove_trailing_text
+
 
 set_seeds(1)
 use_flash_attention_2 = True
@@ -52,8 +53,8 @@ base_templated_content = base_prompt_template.format(query=query)
 chat_templated_content = chat_prompt_template.format(query=query)
 
 # chat and base have different templates
-chat_7b_model  = PrefixPreTrainedWrapper(chat_7b_model, tokenizer, chat_templated_content)
-base_7b_model  = PrefixPreTrainedWrapper(base_7b_model, tokenizer, base_templated_content)
+chat_7b_model = PrefixPreTrainedWrapper(chat_7b_model, tokenizer, chat_templated_content)
+base_7b_model = PrefixPreTrainedWrapper(base_7b_model, tokenizer, base_templated_content)
 
 eft_model = EFTPosthocGenerationMixin(
     base=base_7b_model,

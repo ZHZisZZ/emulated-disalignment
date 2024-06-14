@@ -6,11 +6,8 @@ from transformers import (
     PreTrainedTokenizer,
     AutoModelForCausalLM,
     AutoTokenizer,
-    StoppingCriteriaList,
 )
 from datasets import load_dataset
-
-from inference_time_alignment.utils import StopOnStringCriteria
 
 
 def create_model_and_tokenizer(
@@ -32,37 +29,6 @@ def create_model_and_tokenizer(
     tokenizer.padding_side = "left"
     tokenizer.pad_token = tokenizer.eos_token
     return model, tokenizer
-
-
-def get_stopping_criteria(eos_strings: List[Text], tokenizer: PreTrainedTokenizer):
-    if eos_strings == None:
-        return None
-    else:
-        return StoppingCriteriaList([
-            StopOnStringCriteria(
-                start_length=0, 
-                eos_string=eos_string, 
-                tokenizer=tokenizer
-            ) for eos_string in eos_strings
-        ])
-
-
-def remove_trailing_text(raw_responses: List[Text], eos_strings: List[Text], nonsensical_characters: List[Text]):
-    if eos_strings == None:
-        responses = raw_responses
-    else:
-        responses = []
-        for raw_response in raw_responses:
-            response = raw_response
-            for eos_string in eos_strings:
-                response = response.split(eos_string)[0]
-            responses.append(response)
-    # right strip common nonsensical characters
-    if nonsensical_characters != None:
-        for i in range(len(responses)):
-            for nonsensical_character in nonsensical_characters:
-                responses[i] = responses[i].rstrip(nonsensical_character)
-    return responses
 
 
 def get_query_dataset(dataset_name: Optional[Text] = "Anthropic/hh-rlhf") -> List:

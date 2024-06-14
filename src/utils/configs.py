@@ -7,6 +7,7 @@ class ModelConfig:
     model_name: Text
     get_prompt_template: Callable
 
+
 @dataclass
 class EDConfig:
     base_model_config: ModelConfig

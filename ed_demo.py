@@ -9,11 +9,11 @@ from rich.table import Table
 
 import torch
 
-from utils import EDRegistry, create_model_and_tokenizer, get_query_dataset
-from utils.evaluator import LlamaGuardEvaluator, EvaluationInput, OpenAIModerationEvaluator
-from inference_time_alignment.decoder import EFTPosthocGenerationMixin
-from inference_time_alignment.model import PrefixPreTrainedWrapper
-from inference_time_alignment.utils import set_seeds, get_stopping_criteria, remove_trailing_text
+from src.utils import EDRegistry, create_model_and_tokenizer, get_query_dataset
+from src.utils.evaluator import LlamaGuardEvaluator, EvaluationInput, OpenAIModerationEvaluator
+from src.inference_time_alignment.decoder import EFTPosthocGenerationMixin
+from src.inference_time_alignment.model import PrefixPreTrainedWrapper
+from src.inference_time_alignment.utils import set_seeds, get_stopping_criteria, remove_trailing_text
 
 
 @dataclass(kw_only=True)
@@ -33,6 +33,7 @@ class ScriptArguments:
     dtype: str = field(default="bfloat16", metadata={"help": "`bfloat16` or `float16`"})
     load_in_4bit: bool = field(default=False, metadata={"help": "True if OOM encountered"})
     use_flash_attention_2: bool = field(default=False, metadata={"help": "True to use flash attention 2"})
+
 
 script_args = tyro.cli(ScriptArguments)
 set_seeds(script_args.seed)
