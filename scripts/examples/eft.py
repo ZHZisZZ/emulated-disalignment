@@ -1,32 +1,37 @@
 # PYTHONPATH=. python scripts/examples/eft.py
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+
 from src.inference_time_alignment.decoder import EFTPosthocGenerationMixin
 from src.inference_time_alignment.model import PrefixPreTrainedWrapper
 from src.inference_time_alignment.utils import set_seeds, get_stopping_criteria, remove_trailing_text
 
 
 set_seeds(1)
-use_flash_attention_2 = True
+load_in_4bit = False
+use_flash_attention_2 = False
 generation_configs = {"do_sample":True, "max_new_tokens":512, "temperature":1}
 
 base_7b_model = AutoModelForCausalLM.from_pretrained(
     "meta-llama/Llama-2-7b-hf",
     torch_dtype=torch.bfloat16,
     device_map="auto",
-    use_flash_attention_2=use_flash_attention_2
+    quantization_config=BitsAndBytesConfig(load_in_4bit=load_in_4bit),
+    attn_implementation="flash_attention_2" if use_flash_attention_2 else None,
 )
 chat_7b_model = AutoModelForCausalLM.from_pretrained(
     "meta-llama/Llama-2-7b-chat-hf",
     torch_dtype=torch.bfloat16,
     device_map="auto",
-    use_flash_attention_2=use_flash_attention_2
+    quantization_config=BitsAndBytesConfig(load_in_4bit=load_in_4bit),
+    attn_implementation="flash_attention_2" if use_flash_attention_2 else None,
 )
 base_13b_model = AutoModelForCausalLM.from_pretrained(
     "meta-llama/Llama-2-13b-hf",
     torch_dtype=torch.bfloat16,
     device_map="auto",
-    use_flash_attention_2=use_flash_attention_2
+    quantization_config=BitsAndBytesConfig(load_in_4bit=load_in_4bit),
+    attn_implementation="flash_attention_2" if use_flash_attention_2 else None,
 )
 
 tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-chat-hf")

@@ -6,6 +6,7 @@ from transformers import (
     PreTrainedTokenizer,
     AutoModelForCausalLM,
     AutoTokenizer,
+    BitsAndBytesConfig
 )
 from datasets import load_dataset
 
@@ -20,9 +21,9 @@ def create_model_and_tokenizer(
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         torch_dtype=dtype,
-        load_in_4bit=load_in_4bit,
         device_map="auto",
-        use_flash_attention_2=use_flash_attention_2,
+        quantization_config=BitsAndBytesConfig(load_in_4bit=load_in_4bit),
+        attn_implementation="flash_attention_2" if use_flash_attention_2 else None,
         trust_remote_code=True,
     )
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)

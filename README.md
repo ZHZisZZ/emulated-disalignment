@@ -19,11 +19,12 @@ ED is a simple training-free method that reverse safety alignment, i.e., combini
 ## Installation
 
 ```bash
-create -n emulated-disalignment python=3.10
+conda create -n emulated-disalignment python=3.10
 conda activate emulated-disalignment
 pip install torch==2.1.0 --index-url https://download.pytorch.org/whl/cu118
 pip install -r requirements.txt
-# (optional) pip install flash-attn==2.3.2 --no-build-isolation
+# (optional) pip install flash-attn==2.5.8 --no-build-isolation
+# (optional) pip install bitsandbytes==0.42.0
 ```
 
 
